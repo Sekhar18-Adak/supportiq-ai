@@ -112,11 +112,167 @@
         </article>
       </section>
 
-      <!-- Analytics -->
-      <section class="view" id="view-analytics">
-        <div class="page-head"><div><p class="eyebrow">PERFORMANCE</p><h1>Analytics</h1><p class="muted">Usage metrics are shown only when the backend records and exposes them.</p></div></div>
-        <article class="panel analytics-empty"><div class="empty-chart">⌁</div><h2>Analytics data connection needed</h2><p>Your current chat endpoint returns answers, source labels, traces, and citations, but does not expose aggregate query counts, response latency, or retrieval success rates.</p><p class="muted">No placeholder metrics are shown. We can add these later using your audit database without changing model or vector data.</p></article>
-      </section>
+    <!-- Analytics -->
+<section class="view" id="view-analytics">
+
+  <div class="page-head analytics-heading">
+    <div>
+      <p class="eyebrow">PERFORMANCE OVERVIEW</p>
+      <h1>Analytics</h1>
+      <p class="muted">Monitor your AI assistant's performance and usage.</p>
+    </div>
+
+    <div class="analytics-actions">
+      <select id="analyticsPeriod" class="analytics-select">
+        <option value="7">Last 7 Days</option>
+        <option value="30" selected>Last 30 Days</option>
+        <option value="90">Last 90 Days</option>
+        <option value="365">Last 365 Days</option>
+      </select>
+
+      <button class="btn btn-primary" id="refreshAnalytics">
+        ↻ Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="analytics-kpi-grid">
+
+    <article class="panel analytics-kpi">
+      <div class="kpi-top">
+        <span>Total Queries</span>
+        <span class="kpi-icon purple-icon">⌕</span>
+      </div>
+      <h2 id="totalQueries">—</h2>
+      <p>All recorded queries</p>
+    </article>
+
+    <article class="panel analytics-kpi">
+      <div class="kpi-top">
+        <span>Today's Queries</span>
+        <span class="kpi-icon blue-icon">◷</span>
+      </div>
+      <h2 id="todayQueries">—</h2>
+      <p>Queries received today</p>
+    </article>
+
+    <article class="panel analytics-kpi">
+      <div class="kpi-top">
+        <span>Success Rate</span>
+        <span class="kpi-icon green-icon">✓</span>
+      </div>
+      <h2 id="successRate">—</h2>
+      <p>Successfully processed queries</p>
+    </article>
+
+    <article class="panel analytics-kpi">
+      <div class="kpi-top">
+        <span>Avg Response Time</span>
+        <span class="kpi-icon orange-icon">⚡</span>
+      </div>
+      <h2 id="avgResponseTime">—</h2>
+      <p>Average AI response latency</p>
+    </article>
+
+  </div>
+
+  <!-- Charts -->
+  <div class="analytics-chart-grid">
+
+    <article class="panel analytics-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Query Activity</h2>
+          <p class="muted">Successful and failed queries over time</p>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="queryActivityChart"></canvas>
+      </div>
+    </article>
+
+    <article class="panel analytics-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Source Distribution</h2>
+          <p class="muted">Where answers are coming from</p>
+        </div>
+      </div>
+
+      <div class="source-chart-container">
+        <canvas id="sourceDistributionChart"></canvas>
+      </div>
+
+      <div id="sourceLegend" class="source-legend"></div>
+    </article>
+
+  </div>
+
+  <!-- Additional Metrics -->
+  <div class="analytics-kpi-grid analytics-secondary-grid">
+
+    <article class="panel analytics-kpi">
+      <div class="kpi-top">
+        <span>Failed Queries</span>
+        <span class="kpi-icon red-icon">!</span>
+      </div>
+      <h2 id="failedQueries">—</h2>
+      <p>Requests that failed</p>
+    </article>
+
+    <article class="panel analytics-kpi">
+      <div class="kpi-top">
+        <span>Total Retries</span>
+        <span class="kpi-icon orange-icon">↻</span>
+      </div>
+      <h2 id="totalRetries">—</h2>
+      <p>Agent workflow retries</p>
+    </article>
+
+  </div>
+
+  <!-- Recent Activity -->
+  <article class="panel analytics-panel recent-activity-panel">
+
+    <div class="panel-heading">
+      <div>
+        <h2>Recent Activity</h2>
+        <p class="muted">Latest queries processed by SupportIQ AI</p>
+      </div>
+
+      <span class="activity-label">LIVE DATA</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Question</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Response Time</th>
+            <th>Retries</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+
+        <tbody id="analyticsActivityRows">
+          <tr>
+            <td colspan="6" class="table-empty">
+              Loading analytics...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </article>
+
+  <p id="analyticsStatus" class="analytics-status"></p>
+
+</section>
 
       <!-- Settings -->
       <section class="view" id="view-settings">
@@ -147,4 +303,5 @@
 </div>
 <script src="/static/js/app.js" defer></script>
 </body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </html>

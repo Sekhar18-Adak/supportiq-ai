@@ -1,38 +1,50 @@
 # SupportIQ AI
 
-SupportIQ AI is a FastAPI-based enterprise IT support assistant powered by a Retrieval-Augmented Generation (RAG) workflow. It indexes internal documents, answers employee questions using a private knowledge base, and falls back to web search when the local knowledge is insufficient.
+SupportIQ AI is an enterprise IT support assistant built with FastAPI and a LangGraph-based RAG workflow. It helps employees answer IT-related questions using a private knowledge base and can fall back to public web search when local documents are not enough.
 
 ## Overview
 
-This project is designed for internal IT support use cases such as:
+This project is designed for internal support use cases such as:
 
+- VPN access and troubleshooting
 - password reset guidance
-- VPN and MFA troubleshooting
-- laptop and device setup
-- access requests and software onboarding
-- company IT policy questions
-- general tech support queries
+- MFA and identity help
+- laptop or device onboarding
+- software access requests
+- company policy and knowledge lookup
+- general IT support questions
 
-The system combines:
+The application includes:
 
-- FastAPI for the API and web UI
-- LangGraph for the reasoning workflow
-- LangChain + OpenRouter for LLM orchestration
-- Pinecone for vector search
-- Tavily for web fallback search
-- Local document ingestion for PDF, TXT, MD, and DOCX files
+- a chatbot UI for internal staff
+- document upload and ingestion support
+- private-vector retrieval using Pinecone
+- web fallback search using Tavily
+- a LangGraph workflow for routing and evidence grading
+- analytics and audit tracking for query performance
+
+## Main Features
+
+- Agentic RAG workflow for IT support questions
+- Private knowledge-base search using Pinecone vectors
+- External web fallback when local evidence is weak
+- Upload support for PDF, TXT, MD, and DOCX files
+- Admin-protected ingestion endpoint
+- Dashboard UI with chat, document library, and analytics pages
+- Audit tracking for queries, response time, retries, and success rates
 
 ## Tech Stack
 
-- Python 3.13 (project environment is configured for Python 3.13)
+- Python 3.13
 - FastAPI
 - Uvicorn
+- Jinja2
 - LangGraph
 - LangChain Core / Community / OpenAI
-- Pinecone
 - OpenRouter
+- Pinecone
 - Tavily
-- Jinja2
+- SQLite for audit analytics
 
 ## Project Structure
 
@@ -46,8 +58,11 @@ supportiq-ai/
 ├── data/
 │   └── sample_kb/
 ├── static/
+│   ├── css/
+│   └── js/
 ├── templates/
 ├── uploads/
+├── tests/
 ├── .env
 ├── .gitignore
 ├── ingest_sample_kb.py
@@ -55,16 +70,16 @@ supportiq-ai/
 ├── requirements.txt
 ├── run.py
 ├── README.md
-└── tests/
+└── .venv/   (local only, not committed)
 ```
 
 ## Prerequisites
 
 Before running the project, make sure you have:
 
-- Python 3.10 or later (3.13 is the version used in this project)
+- Python 3.13 or newer
 - pip
-- access to the internet for package installation and external API calls
+- internet access for package installation and external API calls
 - a Pinecone account
 - an OpenRouter account
 - a Tavily account
@@ -80,14 +95,14 @@ cd supportiq-ai
 
 2. Create a virtual environment:
 
-On Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-On macOS/Linux:
+macOS / Linux:
 
 ```bash
 python3 -m venv .venv
@@ -105,62 +120,62 @@ pip install -r requirements.txt
 
 Create a file named `.env` in the project root and add your secrets.
 
-## Required API Keys and Where to Get Them
+## Required Environment Variables
 
-The application reads environment variables from `.env` using `pydantic-settings`.
+The project loads values from `.env` automatically via `pydantic-settings`.
 
-Add values like this in `.env`:
+Example:
 
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key
 TAVILY_API_KEY=your_tavily_api_key
 PINECONE_API_KEY=your_pinecone_api_key
-ADMIN_API_KEY=change-this-to-a-secure-random-string
+ADMIN_API_KEY=your_secure_admin_key
 
 PINECONE_INDEX_NAME=supportiq-embedding-1536
 PINECONE_NAMESPACE=company-it-kb
 EMBEDDING_MODEL=openai/text-embedding-3-small
 OPENROUTER_MODEL=recursive/flint-v1.0:free
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+APP_ENV=development
 ```
 
 ### Where to get each key
 
-- OpenRouter API key:
-  - Visit https://openrouter.ai
+- OpenRouter API key
+  - Go to https://openrouter.ai
   - Sign up or log in
-  - Create an API key from your dashboard
+  - Create an API key from your account dashboard
 
-- Tavily API key:
-  - Visit https://app.tavily.com
+- Tavily API key
+  - Go to https://app.tavily.com
   - Create an account and generate a key
 
-- Pinecone API key:
-  - Visit https://app.pinecone.io
-  - Create a project and an index
-  - Copy the API key and set the index name in `.env`
+- Pinecone API key
+  - Go to https://app.pinecone.io
+  - Create or open a project
+  - Create an index and copy the API key
 
-- Admin API key:
-  - Choose any secure random string for protecting the upload endpoint
-  - This is used in the `X-ADMIN-KEY` header when uploading knowledge files
+- Admin API key
+  - Use a secure random string for the upload-protection header
+  - This is sent in the `X-ADMIN-KEY` header when uploading files
 
-> Important: never commit your `.env` file to GitHub. It contains secrets and should stay on your local machine.
+> Important: do not commit `.env` to GitHub. It contains secrets and should stay local.
 
-## Environment Variables Used by the App
+## Pinecone Setup Notes
 
-These are the main variables the app expects:
+This app expects a Pinecone index that matches the configured embedding model.
 
-- `OPENROUTER_API_KEY`
-- `TAVILY_API_KEY`
-- `PINECONE_API_KEY`
-- `ADMIN_API_KEY`
-- `PINECONE_INDEX_NAME`
-- `PINECONE_NAMESPACE`
-- `EMBEDDING_MODEL`
-- `OPENROUTER_MODEL`
-- `OPENROUTER_BASE_URL`
+The default configuration uses:
 
-## Running the Project
+- model: `openai/text-embedding-3-small`
+- embedding dimension: `1536`
+- index name: `supportiq-embedding-1536`
+- namespace: `company-it-kb`
+
+If you change the embedding model, make sure the Pinecone index dimension matches it.
+
+## How to Run the Project
 
 ### 1. Index the sample knowledge base
 
@@ -168,7 +183,7 @@ These are the main variables the app expects:
 python ingest_sample_kb.py
 ```
 
-This reads the files in `data/sample_kb` and pushes them into Pinecone for retrieval.
+This loads the files from `data/sample_kb` and stores them into Pinecone for retrieval.
 
 ### 2. Start the FastAPI app
 
@@ -176,27 +191,34 @@ This reads the files in `data/sample_kb` and pushes them into Pinecone for retri
 python run.py
 ```
 
-The app will start on:
+This starts the app at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-You can also run it manually with Uvicorn:
+You can also run the app manually:
 
 ```bash
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-## Accessing the App
+## Application Features in the UI
 
-Open this in your browser:
+The web dashboard includes several views:
 
-```text
-http://127.0.0.1:8000/
-```
+- Dashboard overview
+- AI Assistant chat interface
+- Uploaded data / document library
+- Analytics dashboard
+- Settings or workspace status area
 
-The web interface includes a simple IT support chatbot UI.
+The frontend reads from the API to show:
+
+- the interaction trace from the LangGraph workflow
+- selected source (`private_kb`, `web`, or `direct`)
+- uploaded document metadata
+- response-time and usage analytics
 
 ## API Endpoints
 
@@ -206,13 +228,13 @@ The web interface includes a simple IT support chatbot UI.
 GET /api/health
 ```
 
-### Chat
+### Ask a question
 
 ```http
 POST /api/chat
 ```
 
-Request body:
+Example request:
 
 ```json
 {
@@ -220,7 +242,19 @@ Request body:
 }
 ```
 
-### Upload knowledge files
+### List documents
+
+```http
+GET /api/documents
+```
+
+### Get analytics
+
+```http
+GET /api/analytics?days=30
+```
+
+### Upload a document
 
 ```http
 POST /api/ingest
@@ -232,26 +266,34 @@ Headers:
 X-ADMIN-KEY: your-admin-key
 ```
 
-This endpoint accepts PDF, TXT, MD, and DOCX files and stores them in the upload directory before indexing them.
-
-## Supported Document Types
+Supported file types:
 
 - `.pdf`
 - `.txt`
 - `.md`
 - `.docx`
 
-## Recommended GitHub Setup
+## Supported File Types
 
-Before pushing to GitHub:
+The ingestion pipeline supports:
 
-1. Ensure `.env` is added to `.gitignore`
-2. Do not commit real API keys or secrets
-3. Keep the repository clean and provide public-safe configuration examples only
+- `.pdf`
+- `.txt`
+- `.md`
+- `.docx`
 
-## .gitignore
+## GitHub Safety
 
-This project should include entries similar to:
+Before pushing this project to GitHub, make sure:
+
+1. `.env` is ignored
+2. no real API keys are committed
+3. your `uploads` folder does not contain sensitive documents
+4. generated local files such as SQLite DBs remain out of version control
+
+## `.gitignore`
+
+This project should keep entries like the following:
 
 ```gitignore
 .env
@@ -260,27 +302,29 @@ This project should include entries similar to:
 venv/
 __pycache__/
 *.pyc
-*.pyo
-.DS_Store
 uploads/*
 !uploads/.gitkeep
+*.db
+*.sqlite3
 ```
 
 ## Notes
 
-- The project is mainly intended for local development and testing before deployment.
-- You should configure production-grade secrets and deployment settings before hosting publicly.
-- Pinecone index creation and vector dimension matching are required for successful embedding and retrieval.
+- This project is intended primarily for local development and internal deployment testing.
+- The app reads local files and stores uploaded documents in the configured upload directory.
+- Pinecone index existence and correct vector dimensions are required for successful retrieval.
+- The analytics database is stored locally in the project data folder and should not be committed if it contains production data.
 
 ## License
 
-This project does not include a specific open-source license. Add a license file if you want to publish it publicly on GitHub.
+This project does not currently include a formal license file. If you plan to publish it publicly on GitHub, add a license such as MIT or Apache-2.0.
 
 ## Support
 
-For local setup issues, verify:
+If the project does not run correctly, verify:
 
-- your `.env` file is present and correctly formatted
-- your `OPENROUTER_API_KEY`, `TAVILY_API_KEY`, and `PINECONE_API_KEY` are valid
-- your Pinecone index exists and matches the embedding model dimension
-- the sample KB has been indexed before testing the chat flow
+- `.env` exists in the project root
+- your API keys are valid
+- your Pinecone index is created and has the correct dimension
+- the sample knowledge base has been indexed
+- the admin upload header matches your configured `ADMIN_API_KEY`

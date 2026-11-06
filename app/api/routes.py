@@ -2,7 +2,8 @@ import logging
 import secrets
 from pathlib import Path
 from uuid import uuid4
-
+from time import perf_counter
+from app.services.analytics import get_complete_analytics
 from fastapi import (
     APIRouter,
     UploadFile,
@@ -101,6 +102,42 @@ def list_documents():
         "sample_count": sample_count,
         "documents": documents,
     }
+
+# --------------------------------------------------
+# ANALYTICS API
+# --------------------------------------------------
+
+@router.get("/analytics")
+def analytics(days: int = 7):
+
+    try:
+
+        if days < 1 or days > 365:
+            raise HTTPException(
+                status_code=400,
+                detail="Days must be between 1 and 365"
+            )
+
+        data = get_complete_analytics(days)
+
+        return {
+            "status": "success",
+            "period_days": days,
+            "data": data
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+
+        logger.exception("Analytics API failed")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to fetch analytics data"
+        )
+        
 # --------------------------------------------------
 # REQUEST SCHEMA
 # --------------------------------------------------
@@ -133,14 +170,29 @@ def health():
 @router.post("/chat")
 def chat(payload: ChatRequest):
 
+    start_time = perf_counter()
+
     try:
 
+        # Execute Agentic RAG workflow
         result = ask(payload.question)
 
+        # Get execution metrics
+        response_time_ms = result.get(
+            "response_time_ms",
+            (perf_counter() - start_time) * 1000
+        )
+
+        retry_count = result.get("retry_count", 0)
+
+        # Save successful request in audit database
         write_audit(
-            payload.question,
-            result["source_used"],
-            result.get("trace", [])
+            question=payload.question,
+            source_used=result.get("source_used", "unknown"),
+            trace=result.get("trace", []),
+            status="success",
+            response_time_ms=response_time_ms,
+            retry_count=retry_count
         )
 
         return {
@@ -156,17 +208,40 @@ def chat(payload: ChatRequest):
                 "current_query",
                 payload.question
             ),
+
+            "response_time_ms": response_time_ms,
+
+            "retry_count": retry_count
         }
 
     except Exception:
 
+        response_time_ms = (
+            perf_counter() - start_time
+        ) * 1000
+
         logger.exception("Chat API failed")
+
+        # Log failed request
+        try:
+
+            write_audit(
+                question=payload.question,
+                source_used="error",
+                trace=["Chat request failed"],
+                status="failed",
+                response_time_ms=response_time_ms,
+                retry_count=0
+            )
+
+        except Exception:
+
+            logger.exception("Failed to save error audit log")
 
         raise HTTPException(
             status_code=500,
             detail="Something went wrong while processing your question."
         )
-
 
 # --------------------------------------------------
 # DOCUMENT INGESTION API

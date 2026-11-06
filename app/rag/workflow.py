@@ -1,6 +1,6 @@
 import logging
 from typing import Literal
-
+from time import perf_counter
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph, START, END
@@ -568,4 +568,20 @@ def ask(question: str):
         "citations": [],
     }
 
-    return agent_graph.invoke(initial)
+    # Start execution timer
+    start_time = perf_counter()
+
+    # Execute LangGraph workflow
+    result = agent_graph.invoke(initial)
+
+    # Calculate execution time in milliseconds
+    response_time_ms = (
+        perf_counter() - start_time
+    ) * 1000
+
+    # Attach analytics metrics
+    result["response_time_ms"] = round(
+        response_time_ms, 2
+    )
+
+    return result

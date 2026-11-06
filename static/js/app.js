@@ -196,12 +196,397 @@
     $("#pageTitle").textContent = titles[view];
     $("#sidebar").classList.remove("open");
     if (view === "knowledge") loadDocuments();
+    if (view === "analytics") loadAnalytics();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   $$(".nav-link").forEach(button => button.addEventListener("click", () => navigate(button.dataset.view)));
   $$("[data-go]").forEach(button => button.addEventListener("click", () => navigate(button.dataset.go)));
   $$("[data-view-link]").forEach(link => link.addEventListener("click", event => { event.preventDefault(); navigate(link.dataset.viewLink); }));
   $("#menuToggle")?.addEventListener("click", () => $("#sidebar").classList.toggle("open"));
+
+  /* =========================================
+   ANALYTICS DASHBOARD
+========================================= */
+
+let queryActivityChart = null;
+let sourceDistributionChart = null;
+
+const analyticsColors = [
+    "#a855f7",
+    "#60a5fa",
+    "#55d6a2",
+    "#fb923c"
+];
+
+function formatMetric(value) {
+    const number = Number(value ?? 0);
+
+    return Number.isFinite(number)
+        ? number.toLocaleString()
+        : "—";
+}
+
+function formatResponseTime(value) {
+    if (value === null || value === undefined || value === "") {
+        return "—";
+    }
+
+    const number = Number(value);
+
+    return Number.isFinite(number)
+        ? `${number.toFixed(0)} ms`
+        : "—";
+}
+
+function formatActivityDate(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? String(value)
+        : date.toLocaleString();
+}
+
+function updateAnalyticsCards(overview = {}) {
+
+    $("#totalQueries").textContent =
+        formatMetric(overview.total_queries);
+
+    $("#todayQueries").textContent =
+        formatMetric(overview.today_queries);
+
+    $("#successRate").textContent =
+        `${Number(overview.success_rate ?? 0).toFixed(1)}%`;
+
+    $("#avgResponseTime").textContent =
+        formatResponseTime(overview.average_response_time_ms);
+
+    $("#failedQueries").textContent =
+        formatMetric(overview.failed_queries);
+
+    $("#totalRetries").textContent =
+        formatMetric(overview.total_retries);
+}
+
+
+/* Query Activity Chart */
+
+function renderQueryActivity(items = []) {
+
+    const canvas = $("#queryActivityChart");
+
+    if (!canvas || typeof Chart === "undefined") return;
+
+    const labels = items.map(item => item.date || "Unknown");
+
+    const successful = items.map(item =>
+        Number(item.successful_queries ?? 0)
+    );
+
+    const failed = items.map(item =>
+        Number(item.failed_queries ?? 0)
+    );
+
+    if (queryActivityChart) {
+        queryActivityChart.destroy();
+    }
+
+    queryActivityChart = new Chart(canvas, {
+        type: "line",
+
+        data: {
+            labels,
+
+            datasets: [
+                {
+                    label: "Successful",
+                    data: successful,
+                    borderColor: "#55d6a2",
+                    backgroundColor: "#55d6a222",
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2
+                },
+                {
+                    label: "Failed",
+                    data: failed,
+                    borderColor: "#fb7185",
+                    backgroundColor: "#fb718522",
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2
+                }
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+                intersect: false,
+                mode: "index"
+            },
+
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "#aaa6b7",
+                        usePointStyle: true
+                    }
+                }
+            },
+
+            scales: {
+                x: {
+                    ticks: { color: "#9996aa" },
+                    grid: { color: "#30304155" }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: "#9996aa",
+                        precision: 0
+                    },
+                    grid: { color: "#30304155" }
+                }
+            }
+        }
+    });
+}
+
+
+/* Source Distribution Chart */
+
+function renderSourceDistribution(sourceData = {}) {
+
+    const canvas = $("#sourceDistributionChart");
+
+    if (!canvas || typeof Chart === "undefined") return;
+
+    const sourceLabels = {
+        private_kb: "Private Knowledge Base",
+        web_search: "Web Search",
+        direct: "Direct Answer",
+        insufficient_evidence: "Insufficient Evidence"
+    };
+
+    const entries = Object.entries(sourceLabels);
+
+    const labels = entries.map(([, label]) => label);
+
+    const values = entries.map(([key]) =>
+        Number(sourceData[key] ?? 0)
+    );
+
+    if (sourceDistributionChart) {
+        sourceDistributionChart.destroy();
+    }
+
+    sourceDistributionChart = new Chart(canvas, {
+        type: "doughnut",
+
+        data: {
+            labels,
+
+            datasets: [{
+                data: values,
+                backgroundColor: analyticsColors,
+                borderColor: "#1a1a25",
+                borderWidth: 4,
+                hoverOffset: 7
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            cutout: "70%",
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    const legend = $("#sourceLegend");
+
+    legend.replaceChildren();
+
+    entries.forEach(([key, label], index) => {
+
+        const row = document.createElement("div");
+        row.className = "source-legend-item";
+
+        const labelBox = document.createElement("div");
+        labelBox.className = "legend-label";
+
+        const dot = document.createElement("span");
+        dot.className = "legend-dot";
+        dot.style.backgroundColor = analyticsColors[index];
+
+        const text = document.createElement("span");
+        text.textContent = label;
+
+        labelBox.append(dot, text);
+
+        const count = document.createElement("strong");
+        count.textContent = formatMetric(sourceData[key]);
+
+        row.append(labelBox, count);
+
+        legend.appendChild(row);
+    });
+}
+
+
+/* Recent Activity Table */
+
+function renderRecentActivity(items = []) {
+
+    const tbody = $("#analyticsActivityRows");
+
+    tbody.replaceChildren();
+
+    if (!items.length) {
+
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 6;
+        cell.className = "table-empty";
+        cell.textContent = "No activity recorded yet.";
+
+        row.appendChild(cell);
+        tbody.appendChild(row);
+
+        return;
+    }
+
+    items.forEach(item => {
+
+        const row = document.createElement("tr");
+
+        const questionCell = document.createElement("td");
+        questionCell.textContent = item.question || "Unknown question";
+
+        const sourceCell = document.createElement("td");
+        sourceCell.textContent = item.source_used || "—";
+
+        const statusCell = document.createElement("td");
+
+        const badge = document.createElement("span");
+
+        const status = String(item.status || "success").toLowerCase();
+
+        badge.className = `status-badge ${
+            status === "success" ? "status-success" : "status-failed"
+        }`;
+
+        badge.textContent = status === "success" ? "Success" : "Failed";
+
+        statusCell.appendChild(badge);
+
+        const responseCell = document.createElement("td");
+        responseCell.textContent =
+            formatResponseTime(item.response_time_ms);
+
+        const retryCell = document.createElement("td");
+        retryCell.textContent = formatMetric(item.retry_count);
+
+        const dateCell = document.createElement("td");
+        dateCell.textContent = formatActivityDate(item.created_at);
+
+        row.append(
+            questionCell,
+            sourceCell,
+            statusCell,
+            responseCell,
+            retryCell,
+            dateCell
+        );
+
+        tbody.appendChild(row);
+    });
+}
+
+
+/* Fetch Analytics API */
+
+async function loadAnalytics() {
+
+    const status = $("#analyticsStatus");
+    const refreshButton = $("#refreshAnalytics");
+    const period = $("#analyticsPeriod")?.value || "7";
+
+    if (status) {
+        status.textContent = "Fetching analytics data...";
+        status.classList.remove("error");
+    }
+
+    if (refreshButton) {
+        refreshButton.disabled = true;
+        refreshButton.textContent = "Loading...";
+    }
+
+    try {
+
+        const response = await fetch(
+            `/api/analytics?days=${encodeURIComponent(period)}`
+        );
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(result.detail || "Unable to load analytics");
+        }
+
+        const data = result.data || {};
+
+        updateAnalyticsCards(data.overview || {});
+
+        renderQueryActivity(data.daily_analytics || []);
+
+        renderSourceDistribution(
+            data.overview?.source_distribution || {}
+        );
+
+        renderRecentActivity(data.recent_activity || []);
+
+        if (status) {
+            status.textContent =
+                `Analytics updated successfully · Last ${period} days`;
+        }
+
+    } catch (error) {
+
+        console.error("Analytics error:", error);
+
+        if (status) {
+            status.textContent = `Analytics error: ${error.message}`;
+            status.classList.add("error");
+        }
+
+    } finally {
+
+        if (refreshButton) {
+            refreshButton.disabled = false;
+            refreshButton.textContent = "↻ Refresh";
+        }
+    }
+}
+
+
+/* Analytics Event Listeners */
+
+$("#refreshAnalytics")?.addEventListener("click", loadAnalytics);
+
+$("#analyticsPeriod")?.addEventListener("change", loadAnalytics);
 
   // Health check uses the existing endpoint; it does not touch model or vector settings.
   async function checkHealth() {
