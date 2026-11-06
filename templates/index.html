@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111116">
+  <title>{{ app_name }} · Workspace</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#" data-view-link="dashboard">
+      <span class="brand-mark">S</span><span>Support<span class="accent-text">IQ</span><small>ENTERPRISE AI</small></span>
+    </a>
+    <div class="nav-caption">WORKSPACE</div>
+    <nav class="nav-list">
+      <button class="nav-link active" data-view="dashboard"><span>▦</span>Dashboard</button>
+      <button class="nav-link" data-view="chat"><span>◉</span>AI Assistant</button>
+      <button class="nav-link" data-view="knowledge"><span>▤</span>Uploaded Data</button>
+      <button class="nav-link" data-view="analytics"><span>⌁</span>Analytics</button>
+    </nav>
+    <div class="nav-caption nav-caption-gap">PREFERENCES</div>
+    <nav class="nav-list"><button class="nav-link" data-view="settings"><span>⚙</span>Settings</button></nav>
+    <div class="sidebar-bottom">
+      <div class="connection-card"><i class="live-dot"></i><div><b>API workspace</b><small id="apiStatus">Checking connection…</small></div></div>
+      <div class="profile-row"><div class="profile-avatar">A</div><div><b>Workspace Admin</b><small>Administrator</small></div></div>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <button class="icon-btn mobile-menu" id="menuToggle" aria-label="Toggle menu">☰</button>
+      <div class="crumb"><span>Workspace</span><span class="crumb-sep">/</span><b id="pageTitle">Dashboard</b></div>
+      <div class="topbar-right"><span class="system-pill"><i class="live-dot"></i> System status</span><div class="profile-avatar small-avatar">A</div></div>
+    </header>
+
+    <div class="page-content">
+      <!-- Landing dashboard: this is the first page shown when the site opens. -->
+      <section class="view active" id="view-dashboard">
+        <div class="page-head">
+          <div><p class="eyebrow">YOUR AI WORKSPACE</p><h1>Welcome to SupportIQ.</h1><p class="muted">Your company knowledge and IT support assistant, all in one place.</p></div>
+          <button class="btn btn-primary" data-go="chat">＋ Start a conversation</button>
+        </div>
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-label">Uploaded documents <span class="stat-icon purple">▤</span></div><strong id="docCount">—</strong><small id="docCountNote">Reading document library…</small></article>
+          <article class="stat-card"><div class="stat-label">Supported formats <span class="stat-icon blue">⌕</span></div><strong>4</strong><small>PDF · TXT · MD · DOCX</small></article>
+          <article class="stat-card"><div class="stat-label">Knowledge sources <span class="stat-icon violet">✧</span></div><strong id="sourceCount">—</strong><small>Uploaded and sample knowledge folders</small></article>
+          <article class="stat-card"><div class="stat-label">API connection <span class="stat-icon green">●</span></div><strong class="stat-word" id="healthValue">Checking</strong><small id="healthNote">FastAPI health endpoint</small></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel hero-panel">
+            <span class="hero-kicker">SUPPORTIQ AI · AGENTIC RAG</span>
+            <h2>Find answers.<br><span class="gradient-text">Grounded in your knowledge.</span></h2>
+            <p>Ask internal IT questions. SupportIQ searches your private knowledge base first and can use external web search when the workflow needs additional evidence.</p>
+            <button class="btn btn-primary" data-go="chat">Open AI assistant <span>→</span></button>
+            <div class="hero-glow"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>Agent workflow</h3><p class="muted">How a question is handled</p></div><span class="tag">LANGGRAPH</span></div>
+            <div class="steps">
+              <div class="step"><span>01</span><div><b>Route question</b><small>Decide KB or direct response</small></div></div>
+              <div class="step"><span>02</span><div><b>Retrieve private KB</b><small>Search relevant Pinecone vectors</small></div></div>
+              <div class="step"><span>03</span><div><b>Grade evidence</b><small>Evaluate retrieved context</small></div></div>
+              <div class="step"><span>04</span><div><b>Web fallback & answer</b><small>Use fallback when needed</small></div></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="panel quick-panel">
+          <div class="panel-head"><div><h3>Quick actions</h3><p class="muted">Jump into your workspace</p></div></div>
+          <div class="quick-grid">
+            <button class="quick-card" data-go="chat"><span class="quick-symbol purple">✧</span><span><b>Ask the assistant</b><small>Start an AI conversation</small></span><strong>→</strong></button>
+            <button class="quick-card" data-go="knowledge"><span class="quick-symbol blue">＋</span><span><b>Manage uploaded data</b><small>Browse and add documents</small></span><strong>→</strong></button>
+            <button class="quick-card" data-go="analytics"><span class="quick-symbol violet">⌁</span><span><b>View analytics</b><small>See available usage insights</small></span><strong>→</strong></button>
+          </div>
+        </article>
+      </section>
+
+      <!-- Chat -->
+      <section class="view" id="view-chat">
+        <div class="page-head compact"><div><p class="eyebrow">AI WORKSPACE</p><h1>AI Assistant</h1><p class="muted">Ask questions and get answers grounded in your knowledge sources.</p></div><span class="tag">RAG ENABLED</span></div>
+        <div class="chat-layout">
+          <article class="panel chat-panel">
+            <div class="chat-toolbar"><div><i class="live-dot"></i><b>SupportIQ Assistant</b><small>Ready to help</small></div><button class="btn btn-ghost" id="newChat">New chat</button></div>
+            <div class="chat-messages" id="chat">
+              <div class="message assistant"><div class="message-avatar">S</div><div class="message-content"><small>SUPPORTIQ AI</small><div class="bubble"><b>How can I help with IT support?</b><p>Ask about company policies, VPN access, password resets, troubleshooting, or other IT support topics.</p></div></div></div>
+            </div>
+            <div class="composer-area">
+              <div class="suggestions"><button class="suggestion">How do I connect to the company VPN?</button><button class="suggestion">What is our password reset policy?</button></div>
+              <form id="chatForm" class="composer"><textarea id="question" rows="1" maxlength="3000" placeholder="Message SupportIQ…" required></textarea><button id="sendButton" class="send-btn" type="submit" aria-label="Send">↑</button></form>
+              <p class="composer-foot">AI responses may be inaccurate. Verify critical IT actions with your administrator.</p>
+            </div>
+          </article>
+          <aside class="panel trace-panel"><div class="panel-head"><div><h3>Agent activity</h3><p class="muted">Latest LangGraph execution</p></div><span class="tag">TRACE</span></div><div id="trace" class="trace-list"><p class="empty-state">Agent steps will appear here after your first question.</p></div><div class="source-box"><small>FINAL SOURCE</small><b id="sourceUsed">Not available yet</b></div></aside>
+        </div>
+      </section>
+
+      <!-- Uploaded data -->
+      <section class="view" id="view-knowledge">
+        <div class="page-head"><div><p class="eyebrow">COMPANY KNOWLEDGE</p><h1>Uploaded Data</h1><p class="muted">Browse documents available in your local knowledge folders.</p></div><button class="btn btn-primary" id="openUpload">＋ Upload data</button></div>
+        <div class="data-summary-grid">
+          <article class="stat-card"><div class="stat-label">Total files</div><strong id="libraryTotal">—</strong><small>Files found in configured folders</small></article>
+          <article class="stat-card"><div class="stat-label">Uploaded files</div><strong id="uploadedTotal">—</strong><small>Files in upload directory</small></article>
+          <article class="stat-card"><div class="stat-label">Sample KB files</div><strong id="sampleTotal">—</strong><small>Files in sample knowledge folder</small></article>
+        </div>
+        <article class="panel file-panel">
+          <div class="panel-head file-head"><div><h3>Knowledge library</h3><p class="muted">Uploaded and sample knowledge documents</p></div><div class="file-tools"><input id="fileSearch" class="search-input" type="search" placeholder="Search files…"><button class="btn btn-ghost" id="refreshFiles">↻ Refresh</button></div></div>
+          <div class="table-wrap"><table class="file-table"><thead><tr><th>FILE</th><th>TYPE</th><th>LOCATION</th><th>SIZE</th><th>LAST MODIFIED</th></tr></thead><tbody id="fileRows"><tr><td colspan="5" class="table-empty">Loading document library…</td></tr></tbody></table></div>
+          <p class="notice" id="libraryNotice">The list reads files from your configured upload and sample knowledge folders. It does not change or delete Pinecone vectors.</p>
+        </article>
+      </section>
+
+      <!-- Analytics -->
+      <section class="view" id="view-analytics">
+        <div class="page-head"><div><p class="eyebrow">PERFORMANCE</p><h1>Analytics</h1><p class="muted">Usage metrics are shown only when the backend records and exposes them.</p></div></div>
+        <article class="panel analytics-empty"><div class="empty-chart">⌁</div><h2>Analytics data connection needed</h2><p>Your current chat endpoint returns answers, source labels, traces, and citations, but does not expose aggregate query counts, response latency, or retrieval success rates.</p><p class="muted">No placeholder metrics are shown. We can add these later using your audit database without changing model or vector data.</p></article>
+      </section>
+
+      <!-- Settings -->
+      <section class="view" id="view-settings">
+        <div class="page-head"><div><p class="eyebrow">WORKSPACE</p><h1>Settings</h1><p class="muted">Connection overview for the existing SupportIQ services.</p></div></div>
+        <article class="panel settings-panel">
+          <div class="setting-row"><div><b>FastAPI application</b><small>GET /api/health</small></div><span id="settingsHealth" class="status-label">Checking…</span></div>
+          <div class="setting-row"><div><b>AI chat</b><small>POST /api/chat</small></div><span class="status-label">Existing endpoint</span></div>
+          <div class="setting-row"><div><b>Document ingestion</b><small>POST /api/ingest · Admin key required</small></div><span class="status-label">Existing endpoint</span></div>
+          <div class="setting-row"><div><b>Model and vector credentials</b><small>Remain server-side in environment variables.</small></div><span class="status-label">Protected</span></div>
+        </article>
+        <p class="notice">This frontend never asks for or stores your OpenRouter, Pinecone, embedding, or Tavily credentials.</p>
+      </section>
+    </div>
+    <footer class="footer"><span>© 2026 SupportIQ AI</span><span>Private knowledge · Agentic RAG</span></footer>
+  </main>
+</div>
+
+<div class="modal hidden" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+  <div class="modal-card">
+    <div class="modal-head"><div><p class="eyebrow">KNOWLEDGE BASE</p><h2 id="uploadTitle">Upload company data</h2></div><button class="icon-btn" id="closeUpload" aria-label="Close">×</button></div>
+    <p class="muted">The existing ingestion API will extract, chunk, embed, and index this file using your current configuration.</p>
+    <label for="adminKey">Admin API key</label><input class="form-field" id="adminKey" type="password" autocomplete="off" placeholder="Enter admin API key">
+    <label for="fileInput">Choose file</label><input class="form-field file-field" id="fileInput" type="file" accept=".pdf,.txt,.md,.docx">
+    <small class="field-help">Supported: PDF, TXT, Markdown, DOCX. Server-side size limits still apply.</small>
+    <button class="btn btn-primary upload-submit" id="uploadBtn">Index document</button>
+    <div class="modal-status" id="modalUploadStatus" role="status" aria-live="polite"></div>
+  </div>
+</div>
+<script src="/static/js/app.js" defer></script>
+</body>
+</html>
